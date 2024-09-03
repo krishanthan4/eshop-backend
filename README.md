@@ -10,8 +10,8 @@ This is the backend for an E-Commerce application, built using Java EE 7, Hibern
 
 # Installation Prerequisites
 
-**Java JDK 8** : Ensure that Java 8 is installed and configured.
-**MySQL** : For the database.
-**GlassFish 4.1** : A Java EE application server.
+- **Java JDK 8** : Ensure that Java 8 is installed and configured.
+- **MySQL** : For the database.
+- **GlassFish 4.1** : A Java EE application server.
 
 - this requirements are exactly needed because some libraries requires these configurations.
