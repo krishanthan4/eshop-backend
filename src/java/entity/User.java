@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 @Table(name = "user")
 public class User {
     @Id
-    @Column(name = "email", nullable = false, length = 100)
+    @Column(name = "email", nullable = false, length = 100,unique=true)
     private String email;
 
     @Column(name = "fname", length = 50)

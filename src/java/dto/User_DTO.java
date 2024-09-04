@@ -11,9 +11,12 @@ public class User_DTO implements Serializable{
     @Expose(serialize=false,deserialize=true)
     private String password;
 
+        public User_DTO() {}
+ 
     public String getEmail() {
         return email;
     }
+
 
     public void setEmail(String email) {
         this.email = email;
