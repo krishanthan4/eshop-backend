@@ -1,17 +1,49 @@
-package model;
+package entity;
 
-import java.io.Serializable;
+import javax.persistence.*;
+import java.time.Instant;
+import java.time.LocalDateTime;
 
-public class User implements Serializable{
-    private String fname;
-    private String lname;
+@Entity
+@Table(name = "user")
+public class User {
+    @Id
+    @Column(name = "email", nullable = false, length = 100)
     private String email;
+
+    @Column(name = "fname", length = 50)
+    private String fname;
+
+    @Column(name = "lname", length = 45)
+    private String lname;
+
+    @Column(name = "password", nullable = false, length = 20)
     private String password;
+
+    @Column(name = "mobile", length = 10)
     private String mobile;
-    private String joined_date;
-    private String verification_code;
-    private int gender_gender_id;
-    private int status_status_id;
+
+    @Column(name = "joined_date", nullable = false)
+    private LocalDateTime joinedDate;
+
+    @Column(name = "verification_code", length = 20)
+    private String verificationCode;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "gender_gender_id")
+    private int genderGender;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "status_status_id", nullable = false)
+    private int statusStatus;
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
     public String getFname() {
         return fname;
@@ -27,14 +59,6 @@ public class User implements Serializable{
 
     public void setLname(String lname) {
         this.lname = lname;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
     }
 
     public String getPassword() {
@@ -53,35 +77,36 @@ public class User implements Serializable{
         this.mobile = mobile;
     }
 
-    public String getJoined_date() {
-        return joined_date;
+    public LocalDateTime getJoinedDate() {
+        return joinedDate;
     }
 
-    public void setJoined_date(String joined_date) {
-        this.joined_date = joined_date;
+    public void setJoinedDate(LocalDateTime joinedDate) {
+        this.joinedDate = joinedDate;
     }
 
-    public String getVerification_code() {
-        return verification_code;
+    public String getVerificationCode() {
+        return verificationCode;
     }
 
-    public void setVerification_code(String verification_code) {
-        this.verification_code = verification_code;
+    public void setVerificationCode(String verificationCode) {
+        this.verificationCode = verificationCode;
     }
 
-    public int getGender_gender_id() {
-        return gender_gender_id;
+    public int getGenderGender() {
+        return genderGender;
     }
 
-    public void setGender_gender_id(int gender_gender_id) {
-        this.gender_gender_id = gender_gender_id;
+    public void setGenderGender(int genderGender) {
+        this.genderGender = genderGender;
     }
 
-    public int getStatus_status_id() {
-        return status_status_id;
+    public int getStatusStatus() {
+        return statusStatus;
     }
 
-    public void setStatus_status_id(int status_status_id) {
-        this.status_status_id = status_status_id;
+    public void setStatusStatus(int statusStatus) {
+        this.statusStatus = statusStatus;
     }
+
 }

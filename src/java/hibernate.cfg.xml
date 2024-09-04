@@ -8,6 +8,9 @@
     <property name="hibernate.connection.password">Abcd!234</property>
     <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
     <property name="hibernate.show_sql">true</property>
-    <mapping class="model.User" />
+
+    <mapping class="model.User"/>
+        <mapping class="model.Gender"/>
+        <mapping class="model.Status"/>
   </session-factory>
 </hibernate-configuration>

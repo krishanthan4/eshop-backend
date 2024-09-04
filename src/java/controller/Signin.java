@@ -7,7 +7,8 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import model.User;
+import model.HibernateUtil;
+import entity.User;
 
 @WebServlet("/Signin")
 public class Signin extends HttpServlet{
@@ -18,9 +19,11 @@ public class Signin extends HttpServlet{
         Gson gson = new Gson();
         User user = gson.fromJson(request.getReader(),User.class);
         
+        response.getWriter().print(gson.toJson(user));
+        System.out.println(user.getEmail() +" "+user.getPassword());
         
-response.getWriter().print(gson.toJson(user));
-        System.out.println(user.getEmail() +" "+user.getPassword() );
+        HibernateUtil.getSessionFactory().openSession();
     }
+
     
 }
