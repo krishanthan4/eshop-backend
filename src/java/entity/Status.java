@@ -1,5 +1,6 @@
 package entity;
 
+import java.io.Serializable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -7,7 +8,7 @@ import javax.persistence.Table;
 
 @Entity
 @Table(name = "status")
-public class Status {
+public class Status implements Serializable{
     @Id
     @Column(name = "status_id", nullable = false)
     private Integer id;

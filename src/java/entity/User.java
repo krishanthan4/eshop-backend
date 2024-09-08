@@ -1,12 +1,13 @@
 package entity;
 
+import java.io.Serializable;
 import javax.persistence.*;
 import java.time.Instant;
-import java.time.LocalDateTime;
+import java.util.Date;
 
 @Entity
 @Table(name = "user")
-public class User {
+public class User implements Serializable{
     @Id
     @Column(name = "email", nullable = false, length = 100,unique=true)
     private String email;
@@ -24,18 +25,21 @@ public class User {
     private String mobile;
 
     @Column(name = "joined_date", nullable = false)
-    private LocalDateTime joinedDate;
+    private Date joinedDate;
 
-    @Column(name = "verification_code", length = 20)
+    @Column(name = "verification_code", length = 20,nullable=true)
     private String verificationCode;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "gender_gender_id")
-    private int genderGender;
+    @JoinColumn(name = "gender_gender_id",nullable=true)
+    private Gender genderGender;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "status_status_id", nullable = false)
-    private int statusStatus;
+    private Status statusStatus;
+
+    public User() {
+    }
 
     public String getEmail() {
         return email;
@@ -77,11 +81,11 @@ public class User {
         this.mobile = mobile;
     }
 
-    public LocalDateTime getJoinedDate() {
+    public Date getJoinedDate() {
         return joinedDate;
     }
 
-    public void setJoinedDate(LocalDateTime joinedDate) {
+    public void setJoinedDate(Date joinedDate) {
         this.joinedDate = joinedDate;
     }
 
@@ -93,19 +97,19 @@ public class User {
         this.verificationCode = verificationCode;
     }
 
-    public int getGenderGender() {
+    public Gender getGenderGender() {
         return genderGender;
     }
 
-    public void setGenderGender(int genderGender) {
+    public void setGenderGender(Gender genderGender) {
         this.genderGender = genderGender;
     }
 
-    public int getStatusStatus() {
+    public Status getStatusStatus() {
         return statusStatus;
     }
 
-    public void setStatusStatus(int statusStatus) {
+    public void setStatusStatus(Status statusStatus) {
         this.statusStatus = statusStatus;
     }
 

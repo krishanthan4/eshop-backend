@@ -36,10 +36,12 @@ public class CORSFilter implements Filter{
         } else {
             // Handle cases where origin is not allowed
             httpResponse.setHeader("Access-Control-Allow-Origin", ""); // No access if not allowed
+            System.out.println("Illegal Entry");
         }
 
         httpResponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
         httpResponse.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        httpResponse.setHeader("Access-Control-Allow-Credentials", "true");
         
         // Handle preflight requests
         if ("OPTIONS".equalsIgnoreCase(httpRequest.getMethod())) {
