@@ -24,20 +24,21 @@ public class User implements Serializable{
     @Column(name = "mobile", length = 10)
     private String mobile;
 
-    @Column(name = "joined_date", nullable = false)
+    @Column(name = "joinedDate", nullable = false)
+    @Temporal(javax.persistence.TemporalType.DATE)
     private Date joinedDate;
 
-    @Column(name = "verification_code", length = 20,nullable=true)
-    private String verificationCode;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "gender_gender_id",nullable=true)
+    @JoinColumn(name = "genderGenderId",nullable=true)
     private Gender genderGender;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "status_status_id", nullable = false)
+    @JoinColumn(name = "statusStatusId", nullable = false)
     private Status statusStatus;
 
+     @Column(name = "verificationCode", length = 20,nullable=true)
+    private String verificationCode;
+    
     public User() {
     }
 
@@ -89,14 +90,6 @@ public class User implements Serializable{
         this.joinedDate = joinedDate;
     }
 
-    public String getVerificationCode() {
-        return verificationCode;
-    }
-
-    public void setVerificationCode(String verificationCode) {
-        this.verificationCode = verificationCode;
-    }
-
     public Gender getGenderGender() {
         return genderGender;
     }
@@ -111,6 +104,14 @@ public class User implements Serializable{
 
     public void setStatusStatus(Status statusStatus) {
         this.statusStatus = statusStatus;
+    }
+
+    public String getVerificationCode() {
+        return verificationCode;
+    }
+
+    public void setVerificationCode(String verificationCode) {
+        this.verificationCode = verificationCode;
     }
 
 }

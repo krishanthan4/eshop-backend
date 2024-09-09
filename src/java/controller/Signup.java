@@ -56,7 +56,7 @@ public class Signup extends HttpServlet {
 
                 if (!criteria.list().isEmpty()) {
                     responsedto.setContent("User already Exists");
-                    System.out.println("User already Exists");
+                    System.out.println("User already Exists : "+criteria.list().get(0));
                 } else {
                     // Generate a verification code
                     int code = (int) (Math.random() * 100000);

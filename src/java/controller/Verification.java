@@ -43,11 +43,11 @@ try {
         // Create criteria to find the user by email and verification code
         Criteria criteria1 = session.createCriteria(User.class);
         criteria1.add(Restrictions.eq("email", email));
-        criteria1.add(Restrictions.eq("verification_code", verification));
+        criteria1.add(Restrictions.eq("verificationCode", verification));
 
         // Fetch the result once
         User user = (User) criteria1.uniqueResult();  // uniqueResult is better than list() if you expect one record
-        System.out.println("User : "+user);
+System.out.println("User found: " + (user != null));
 
         if (user != null) {
             user.setVerificationCode("verified");

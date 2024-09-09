@@ -1,22 +1,23 @@
-package controller;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import dto.Response_DTO;
-import dto.User_DTO;
-import java.io.IOException;
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import model.HibernateUtil;
-import entity.User;
-import javax.servlet.http.Cookie;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.criterion.Restrictions;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Date;
+import javax.servlet.annotation.WebServlet;
+import model.HibernateUtil;
+import entity.User;
+import util.config;
 
 @WebServlet("/Signin")
 public class Signin extends HttpServlet {
@@ -24,20 +25,15 @@ public class Signin extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         Response_DTO response_DTO = new Response_DTO();
-
         Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
         JsonObject userJson = gson.fromJson(request.getReader(), JsonObject.class);
 
         if (userJson.get("email").getAsString().isEmpty()) {
             response_DTO.setContent("Please enter your Email");
-
         } else if (userJson.get("password").getAsString().isEmpty()) {
             response_DTO.setContent("Please enter your Password");
-
         } else {
-
             Session session = HibernateUtil.getSessionFactory().openSession();
-
             Criteria criteria1 = session.createCriteria(User.class);
             criteria1.add(Restrictions.eq("email", userJson.get("email").getAsString()));
             criteria1.add(Restrictions.eq("password", userJson.get("password").getAsString()));
@@ -46,34 +42,25 @@ public class Signin extends HttpServlet {
                 User user = (User) criteria1.list().get(0);
 
                 if (!user.getVerificationCode().equals("verified")) {
-                    //not verified
                     request.getSession().setAttribute("user", userJson.get("email").getAsString());
-                    response_DTO.setSuccess(true);
                     response_DTO.setContent("Unverified");
                 } else {
-                    //verified
-                    request.getSession().setAttribute("user", userJson.get("email").getAsString());
+                    // Generate JWT token
+                    String token = Jwts.builder()
+                        .setSubject(user.getEmail())
+                        .setIssuedAt(new Date())
+                        .setExpiration(new Date(System.currentTimeMillis() + 3600000)) // 1 hour expiration
+                        .signWith(SignatureAlgorithm.HS512, config.SECRET_KEY.getBytes())
+                        .compact();
 
-            
-                    if (userJson.get("RememberMe").getAsBoolean()) {
-                        Cookie userEmailCookie = new Cookie("user_email", userJson.get("email").getAsString());
-                         userEmailCookie.setHttpOnly(true);
-//                    userEmailCookie.setSecure(true);
-                        userEmailCookie.setPath("/");
-                        userEmailCookie.setMaxAge(60 * 60 * 24 * 7);
-                        response.addCookie(userEmailCookie);
-                        Cookie userPasswordCookie = new Cookie("user_password", userJson.get("password").getAsString());
-                               userPasswordCookie.setHttpOnly(true);
-//                    userPasswordCookie.setSecure(true);
-                        userPasswordCookie.setPath("/");
-                        userPasswordCookie.setMaxAge(60 * 60 * 24 * 7);
-                        response.addCookie(userPasswordCookie);
-                    }
+                    // Send JWT token in response
                     response_DTO.setSuccess(true);
                     response_DTO.setContent("Sign in Success");
+                response.addHeader("Authorization", "Bearer " + token);
 
+                    // Optionally, store user information in session
+                    request.getSession().setAttribute("user", userJson.get("email").getAsString());
                 }
-
             } else {
                 response_DTO.setContent("Invalid Details! Please try again");
             }
@@ -83,5 +70,4 @@ public class Signin extends HttpServlet {
         response.getWriter().write(gson.toJson(response_DTO));
         System.out.println(gson.toJson(response_DTO));
     }
-
 }

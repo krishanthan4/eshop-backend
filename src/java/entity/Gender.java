@@ -10,10 +10,10 @@ import javax.persistence.Table;
 @Table(name = "gender")
 public class Gender implements Serializable{
     @Id
-    @Column(name = "gender_id", nullable = false)
+    @Column(name = "genderId", nullable = false)
     private Integer id;
 
-    @Column(name = "gender_name", length = 10)
+    @Column(name = "genderName", length = 10)
     private String genderName;
 
     public Gender() {
