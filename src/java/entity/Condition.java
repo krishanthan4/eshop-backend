@@ -7,14 +7,14 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "condition")
+@Table(name = "`condition`")
 public class Condition implements Serializable{
     @Id
     @Column(name = "conditionId")
     private int id;
 
-    @Column(name = "conditionName", length = 20,nullable=true)
-    private String conditionName;
+    @Column(name = "conditionName")
+    private String name;
 
     public Condition() {
     }
@@ -27,12 +27,12 @@ public class Condition implements Serializable{
         this.id = id;
     }
 
-    public String getConditionName() {
-        return conditionName;
+    public String getName() {
+        return name;
     }
 
-    public void setConditionName(String conditionName) {
-        this.conditionName = conditionName;
+    public void setName(String name) {
+        this.name = name;
     }
 
 }

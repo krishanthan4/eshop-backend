@@ -1,63 +1,60 @@
 package entity;
 
 import java.io.Serializable;
-import javax.persistence.*;
-import java.time.Instant;
 import java.util.Date;
+import javax.persistence.*;
 
 @Entity
 @Table(name = "product")
-public class Product implements Serializable{
+public class Product implements Serializable {
+
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Integer id;
 
-    @Column(name = "price",nullable=true)
+    @Column(name = "price", nullable = true)
     private Double price;
 
-    @Column(name = "qty",nullable=true)
+    @Column(name = "qty", nullable = true)
     private Integer qty;
 
-    @Lob
-    @Column(name = "description",nullable=true)
+    @Column(name = "description", nullable = true)
     private String description;
 
-    @Column(name = "title", length = 100,nullable=true)
+    @Column(name = "title", length = 100, nullable = true)
     private String title;
 
-    @Column(name = "datetimeAdded",nullable=true)
+    @Column(name = "datetimeAdded", nullable = true)
     private Date datetimeAdded;
 
-    @Column(name = "deliveryFeeColombo",nullable=true)
-    private Double deliveryFeeColombo;
+    @Column(name = "deliveryFee", nullable = true)
+    private Double deliveryFee;
 
-    @Column(name = "deliveryFeeOther",nullable=true)
-    private Double deliveryFeeOther;
+    @ManyToOne
+    @JoinColumn(name = "modelModelId")
+    private Model model;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "categoryCatId", nullable = false)
-    private Category categoryCat;
+    @ManyToOne
+    @JoinColumn(name = "colorClrId")
+    private Color color;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "modelHasBrandId", nullable = false)
-    private ModelHasBrand modelHasBrand;
+    @ManyToOne
+    @JoinColumn(name = "conditionConditionId")
+    private Condition condition;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "conditionConditionId", nullable = false)
-    private Condition conditionCondition;
+    @ManyToOne
+    @JoinColumn(name = "statusStatusId")
+    private Status status;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "statusStatusId", nullable = false)
-    private Status statusStatus;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "userEmail", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "userEmail")
     private User userEmail;
 
+    // Default constructor
     public Product() {
     }
 
-    
     public Integer getId() {
         return id;
     }
@@ -106,52 +103,44 @@ public class Product implements Serializable{
         this.datetimeAdded = datetimeAdded;
     }
 
-    public Double getDeliveryFeeColombo() {
-        return deliveryFeeColombo;
+    public Double getDeliveryFee() {
+        return deliveryFee;
     }
 
-    public void setDeliveryFeeColombo(Double deliveryFeeColombo) {
-        this.deliveryFeeColombo = deliveryFeeColombo;
+    public void setDeliveryFee(Double deliveryFee) {
+        this.deliveryFee = deliveryFee;
     }
 
-    public Double getDeliveryFeeOther() {
-        return deliveryFeeOther;
+    public Model getModel() {
+        return model;
     }
 
-    public void setDeliveryFeeOther(Double deliveryFeeOther) {
-        this.deliveryFeeOther = deliveryFeeOther;
+    public void setModel(Model model) {
+        this.model = model;
     }
 
-    public Category getCategoryCat() {
-        return categoryCat;
+    public Color getColor() {
+        return color;
     }
 
-    public void setCategoryCat(Category categoryCat) {
-        this.categoryCat = categoryCat;
+    public void setColor(Color color) {
+        this.color = color;
     }
 
-    public ModelHasBrand getModelHasBrand() {
-        return modelHasBrand;
+    public Condition getCondition() {
+        return condition;
     }
 
-    public void setModelHasBrand(ModelHasBrand modelHasBrand) {
-        this.modelHasBrand = modelHasBrand;
+    public void setCondition(Condition condition) {
+        this.condition = condition;
     }
 
-    public Condition getConditionCondition() {
-        return conditionCondition;
+    public Status getStatus() {
+        return status;
     }
 
-    public void setConditionCondition(Condition conditionCondition) {
-        this.conditionCondition = conditionCondition;
-    }
-
-    public Status getStatusStatus() {
-        return statusStatus;
-    }
-
-    public void setStatusStatus(Status statusStatus) {
-        this.statusStatus = statusStatus;
+    public void setStatus(Status status) {
+        this.status = status;
     }
 
     public User getUserEmail() {

@@ -15,7 +15,7 @@
 
     SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
 -->
-<glassfish-web-app error-url="">
+<glassfish-web-app error-url="localhost:3000/404">
   <context-root>/</context-root>
   <class-loader delegate="true"/>
   <jsp-config>

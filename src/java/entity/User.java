@@ -21,19 +21,18 @@ public class User implements Serializable{
     @Column(name = "password", nullable = false, length = 20)
     private String password;
 
-    @Column(name = "mobile", length = 10)
+    @Column(name = "mobile", length = 10,nullable=true)
     private String mobile;
 
     @Column(name = "joinedDate", nullable = false)
-    @Temporal(javax.persistence.TemporalType.DATE)
     private Date joinedDate;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "genderGenderId",nullable=true)
+    @ManyToOne
+    @JoinColumn(name = "genderGenderId")
     private Gender genderGender;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "statusStatusId", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "statusStatusId")
     private Status statusStatus;
 
      @Column(name = "verificationCode", length = 20,nullable=true)

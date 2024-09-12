@@ -5,6 +5,13 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import dto.Response_DTO;
 import entity.Category;
+import entity.Color;
+import entity.Condition;
+import entity.Gender;
+import entity.Product;
+import entity.Model;
+import entity.Status;
+import entity.User;
 import java.io.IOException;
 import java.util.List;
 import javax.servlet.ServletException;
@@ -15,6 +22,8 @@ import javax.servlet.http.HttpServletResponse;
 import model.HibernateUtil;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
+import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Restrictions;
 
 @WebServlet("/GetCategories")
 public class GetCategories extends HttpServlet {
@@ -24,34 +33,28 @@ public class GetCategories extends HttpServlet {
 
         Gson gson = new Gson();
         Session session = null;
-        Response_DTO responsedto = new Response_DTO();
+        
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("success", false);
         try {
             session = HibernateUtil.getSessionFactory().openSession();
-            Criteria categoryCriteria = session.createCriteria(Category.class);
-            JsonArray categoryArray = new JsonArray();
+            Criteria criteria1 = session.createCriteria(Category.class);
+            List<Category> categoryList = criteria1.list();
 
-            if (!categoryCriteria.list().isEmpty()) {
-                List<Category> categoryList = categoryCriteria.list();
-                for (Category category : categoryList) {
-                    JsonObject categoryObject = new JsonObject();
-                    categoryObject.addProperty("catId", category.getId());
-                    categoryObject.addProperty("catName", category.getCatName());
-                    categoryObject.addProperty("catIcon", category.getCatIcon());
-                    categoryObject.addProperty("catImg", category.getCatImg());
-                    categoryArray.add(categoryObject);
-                }
+            if(!categoryList.isEmpty()){
+        jsonObject.addProperty("success", true);
+            jsonObject.add("categoryList", gson.toJsonTree(categoryList));
             }
-
-            response.getWriter().write(gson.toJson(categoryArray));
-
+            
         } catch (Exception e) {
             System.out.println("Error : " + e);
-            responsedto.setContent("Something went wrong");
-            response.getWriter().write(gson.toJson(responsedto));
         } finally {
             if (session != null) {
                 session.close(); // Ensure the session is always closed
             }
+            
+                 response.getWriter().write(gson.toJson(jsonObject));
+            System.out.println("Categories :" + gson.toJson(jsonObject));
         }
         response.setCharacterEncoding("UTF-8");
         response.setContentType("application/json");

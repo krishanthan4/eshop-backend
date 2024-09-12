@@ -8,6 +8,7 @@ public class config_sample {
 // add the correct details and save this file as config.java
 
     public static final String CLIENT_URL = "http://localhost:3000";
+      public static final String CLIENT_LOCATION = "EXACTPROJECT_LOCATION_FROM_THE_ROOT";
     public static final String CLIENT_URL_SECURED = "https://localhost:3000";
     public static final String SERVER_URL = "http://localhost:8080/eshop-backend";
     public static final String DB_USERNAME = "root";
@@ -23,6 +24,7 @@ public class config_sample {
     public static List<String> getConfigList() {
         return new ArrayList<>(Arrays.asList(
                 CLIENT_URL,
+                CLIENT_LOCATION,
                 CLIENT_URL_SECURED,
                 SERVER_URL,
                 DB_USERNAME,

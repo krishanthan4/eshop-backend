@@ -3,11 +3,11 @@ package controller;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import dto.Cart_DTO;
 import dto.Response_DTO;
-import entity.Brand;
+import dto.User_DTO;
+import entity.Cart;
 import entity.Category;
-import entity.CategoryHasBrand;
-import entity.ModelHasBrand;
 import entity.Product;
 import entity.User;
 import java.io.IOException;
@@ -24,106 +24,102 @@ import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.criterion.Restrictions;
 import entity.Model;
+import entity.ProductImg;
+import javax.servlet.http.HttpSession;
+import org.hibernate.criterion.Order;
 
 @WebServlet("/Verid")
 public class Verid extends HttpServlet {
+@Override
+protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    Gson gson = new Gson();
+    JsonObject jsonObject = new JsonObject();
+    jsonObject.addProperty("success", false);
+    Session session = null;
+                HttpSession httpSession = request.getSession();
 
-        Response_DTO responsedto = new Response_DTO();
-        Gson gson = new Gson();
-        Session session = null;
-        Transaction tx = null;
-        try {
-             session = HibernateUtil.getSessionFactory().openSession();
-            tx = session.beginTransaction();
+    try {
+        // Open session for database interaction
+        session = HibernateUtil.getSessionFactory().openSession();
+    User_DTO user_DTO = new User_DTO();
+    user_DTO.setEmail((String) httpSession.getAttribute("user"));
+        // Fetch the user from the session (replace "" with actual user email from the session or request)
+        String userEmail = "email@fkdlk.com";
+        Criteria userCriteria = session.createCriteria(User.class);
+        userCriteria.add(Restrictions.eq("email", userEmail));
+        User user = (User) userCriteria.uniqueResult();
 
-      
-               Criteria categoryCriteria = session.createCriteria(Category.class);
-List<Category> categoryList = categoryCriteria.list();
+        if (user != null) {
+            // Fetch the cart items for the logged-in user
+            Criteria cartCriteria = session.createCriteria(Cart.class);
+            cartCriteria.add(Restrictions.eq("user", user));
 
-// Create a JSON array for the response
-JsonArray categoryArray = new JsonArray();
+            // Check if the cart has any items
+            if (!cartCriteria.list().isEmpty()) {
+                List<Cart> cartList = cartCriteria.list();
 
-for (Category category : categoryList) {
-    JsonObject categoryJson = new JsonObject();
-    categoryJson.addProperty("catId", category.getId());
-    categoryJson.addProperty("catName", category.getCatName());
-    categoryJson.addProperty("catIcon", category.getCatIcon()); // You can set the actual icon path here.
+                JsonArray cartArray = new JsonArray(); // Array to hold all cart items with product details
 
-    // Fetch CategoryHasBrand entries associated with the current category
-    Criteria categoryHasBrandCriteria = session.createCriteria(CategoryHasBrand.class)
-            .add(Restrictions.eq("categoryCatId", category.getId())); // Assuming categoryId is the field
-    List<CategoryHasBrand> categoryHasBrandList = categoryHasBrandCriteria.list();
+                for (Cart cart : cartList) {
+                    JsonObject cartObject = new JsonObject();
+cart.setUser(null);
+                    // Fetch the product for each cart item
+                    Criteria productCriteria = session.createCriteria(Product.class);
+                    productCriteria.add(Restrictions.eq("id", cart.getProduct().getId()));
+                    Product product = (Product) productCriteria.uniqueResult();
 
-    JsonArray brandArray = new JsonArray();
+                    if (product != null) {
+                        product.setUserEmail(null);
+                        // Convert the product to a JSON object
+                        JsonObject productObject = gson.toJsonTree(product).getAsJsonObject();
 
-    for (CategoryHasBrand categoryHasBrand : categoryHasBrandList) {
-        // Fetch the brand associated with this CategoryHasBrand
-        Brand brand = (Brand) session.get(Brand.class, categoryHasBrand.getBrandBrand()); // Use the ID to get the brand
+                        // Fetch associated product images
+                        Criteria productImgCriteria = session.createCriteria(ProductImg.class);
+                        productImgCriteria.add(Restrictions.eq("product", product));
+                        List<ProductImg> productImgList = productImgCriteria.list();
+                    
+                        // Add product images if they exist
+                        if (!productImgList.isEmpty()) {
+                            for (ProductImg productImg : productImgList) {
+                                productImg.setProduct(null); // Avoid circular reference in JSON
+                            }
+                            productObject.add("productImgs", gson.toJsonTree(productImgList)); // Attach images to the product object
+                        }
 
-        JsonObject brandJson = new JsonObject();
-        brandJson.addProperty("brandId", brand.getId());
-        brandJson.addProperty("brandName", brand.getBrandName());
+                        // Add product details to the cart object
+                        cartObject.add("product", productObject);
+                        cartObject.addProperty("quantity", cart.getQty()); // Add quantity to the cart object
+                        cartObject.addProperty("cartId", cart.getId()); // Add cart ID if needed
 
-        // Fetch ModelHasBrand entries associated with the current brand
-        Criteria modelHasBrandCriteria = session.createCriteria(ModelHasBrand.class)
-                .add(Restrictions.eq("brandBrandId", brand.getId())); // Assuming brandBrand is the field
-        List<ModelHasBrand> modelHasBrandList = modelHasBrandCriteria.list();
+                        // Add the cart object to the array
+                        cartArray.add(cartObject);
+                    }
+                }
 
-        JsonArray modelArray = new JsonArray();
-
-        for (ModelHasBrand modelHasBrand : modelHasBrandList) {
-            // Fetch the model associated with this ModelHasBrand
-            Model model = (Model) session.get(Model.class, modelHasBrand.getModelModel().getId());
-
-            JsonObject modelJson = new JsonObject();
-            modelJson.addProperty("modelId", model.getId());
-            modelJson.addProperty("modelName", model.getModelName());
-
-            // Fetch products associated with this model
-            Criteria productCriteria = session.createCriteria(Product.class)
-                    .add(Restrictions.eq("modelHasBrand", modelHasBrand.getId())); // Assuming modelHasBrand is the field
-            List<Product> productList = productCriteria.list();
-
-            JsonArray productArray = new JsonArray();
-
-            for (Product product : productList) {
-                JsonObject productJson = new JsonObject();
-                productJson.addProperty("id", product.getId());
-                productJson.addProperty("title", product.getTitle());
-                productArray.add(productJson);
+                // If we found cart items, set success to true and add the cart array to the response
+                jsonObject.addProperty("success", true);
+                jsonObject.add("cartList", cartArray);
             }
-
-            modelJson.add("products", productArray);
-            modelArray.add(modelJson);
+        } else {
+            System.out.println("User not found.");
         }
 
-        brandJson.add("models", modelArray);
-        brandArray.add(brandJson);
-    }
+        // Write the response
+        response.setContentType("application/json");
+        response.getWriter().write(gson.toJson(jsonObject));
 
-    categoryJson.add("brands", brandArray);
-    categoryArray.add(categoryJson);
+    } catch (Exception e) {
+        e.printStackTrace();
+        jsonObject.addProperty("error", e.getMessage());
+        response.getWriter().write(gson.toJson(jsonObject));
+    } finally {
+        // Ensure the session is closed after use
+        if (session != null) {
+            session.close();
+        }
+    }
 }
 
-// Send response
-JsonObject responseObject = new JsonObject();
-responseObject.add("categories", categoryArray);
-
-            // Commit the transaction if required
-            tx.commit();
-
-            // Send the response back as JSON
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
-            response.getWriter().write(gson.toJson(responseObject));
-
-        } catch (Exception e) {
-            System.out.println("Error : " + e.getMessage());
-        }
-
-    }
 
 }
