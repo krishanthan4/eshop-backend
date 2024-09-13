@@ -9,15 +9,22 @@
         <property name="show_sql">true</property>
         <property name="format_sql">true</property>
         <property name="use_sql_comments">true</property>
-        <mapping class="entity.Gender"/>
-        <mapping class="entity.Status"/>
-        <mapping class="entity.User"/>
+        <mapping class="entity.Address"/>
+        <mapping class="entity.Cart"/>
         <mapping class="entity.Category"/>
-        <mapping class="entity.Model"/>
-        <mapping class="entity.Condition"/>
+        <mapping class="entity.City"/>
         <mapping class="entity.Color"/>
+        <mapping class="entity.Condition"/>
+        <mapping class="entity.District"/>
+        <mapping class="entity.Gender"/>
+        <mapping class="entity.Invoice"/>
+        <mapping class="entity.InvoiceHasProducts"/>
+        <mapping class="entity.Model"/>
+        <mapping class="entity.OrderStatus"/>
         <mapping class="entity.Product"/>
         <mapping class="entity.ProductImg"/>
-        <mapping class="entity.Cart"/>
+        <mapping class="entity.Province"/>
+        <mapping class="entity.Status"/>
+        <mapping class="entity.User"/>
     </session-factory>
 </hibernate-configuration>

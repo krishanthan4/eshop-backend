@@ -20,6 +20,9 @@ public class config_sample {
     public static final String APP_PASSWORD = "password";
     public static final String APP_EMAIL = "email";
     public static final String SECRET_KEY = "secret-key";
+    public static final String MERCHANT_ID = "id";
+    public static final String MERCHANT_SECRET = "secret";
+
 
     public static List<String> getConfigList() {
         return new ArrayList<>(Arrays.asList(
@@ -34,7 +37,9 @@ public class config_sample {
                 DB_HOST,
                 APP_PASSWORD,
                 APP_EMAIL,
-                SECRET_KEY
+                SECRET_KEY,
+                MERCHANT_ID,
+                MERCHANT_SECRET
         ));
     }
 }

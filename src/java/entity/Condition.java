@@ -14,7 +14,7 @@ public class Condition implements Serializable{
     private int id;
 
     @Column(name = "conditionName")
-    private String name;
+    private String conditionName;
 
     public Condition() {
     }
@@ -28,11 +28,11 @@ public class Condition implements Serializable{
     }
 
     public String getName() {
-        return name;
+        return conditionName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setName(String conditionName) {
+        this.conditionName = conditionName;
     }
 
 }

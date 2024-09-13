@@ -48,14 +48,14 @@ JsonObject requestObject = gson.fromJson(request.getReader(), JsonObject.class);
 String cartProductId=  requestObject.get("cartProductId").getAsString();
         // Open session for database interaction
         session = HibernateUtil.getSessionFactory().openSession();
-    User_DTO user_DTO = new User_DTO();
-    user_DTO.setEmail((String) httpSession.getAttribute("user"));
+
+        String email2 = (String) httpSession.getAttribute("user");
             ArrayList<Cart_DTO> cart_DTO_List = new ArrayList<>();
 
         // Fetch the user from the session (replace "" with actual user email from the session or request)
 //        String userEmail = ;
         Criteria userCriteria = session.createCriteria(User.class);
-        userCriteria.add(Restrictions.eq("email", user_DTO.getEmail()));
+        userCriteria.add(Restrictions.eq("email", email2));
         User user = (User) userCriteria.uniqueResult();
 
         if (user != null) {
@@ -70,6 +70,9 @@ Cart cartItem = (Cart) cartCriteria.uniqueResult();
 if (cartItem != null) {
     session.delete(cartItem);
     session.getTransaction().commit(); // Commit the transaction
+        jsonObject.addProperty("success", true);
+        jsonObject.addProperty("content", "user Cart Item Removed");
+
     System.out.println("Cart item removed successfully.");
 } else {
     System.out.println("Cart item not found.");
@@ -78,14 +81,16 @@ if (cartItem != null) {
                  // Write the response
         response.setContentType("application/json");
         response.getWriter().write(gson.toJson(jsonObject));
+            System.out.println("User Cart");
         } else {
 // Session Cart
 if (httpSession.getAttribute("sessionCart") != null) {
+                System.out.println("Session Cart");
     cart_DTO_List = (ArrayList<Cart_DTO>) httpSession.getAttribute("sessionCart");
 
     // Create the root JsonObject for the response
     JsonObject jsonObject2 = new JsonObject();
-    jsonObject2.addProperty("success", true);
+//    jsonObject2.addProperty("success", true);
 
     // Create a JsonArray to store all cart items
     JsonArray cartArray = new JsonArray();

@@ -40,6 +40,8 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
     org.hibernate.Session session = HibernateUtil.getSessionFactory().openSession();
     Transaction transaction = session.beginTransaction();
     Response_DTO response_DTO = new Response_DTO();
+                                HttpSession httpSession = request.getSession();
+
     try {
         JsonObject requestObject = gson.fromJson(request.getReader(), JsonObject.class);
         String id = requestObject.get("productId").getAsString();
@@ -58,9 +60,10 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             } else {
                 Product product = (Product) session.get(Product.class, productId);
                 if (product != null) {
-                    if (request.getSession().getAttribute("user") != null) {
-                        String userEmail = (String) request.getSession().getAttribute("user");
-
+                     String userEmail = (String) request.getSession().getAttribute("user");
+//                        System.out.println("|| userCart ||"+userEmail);
+                    if (httpSession.getAttribute("user") != null) {
+                       
                         // Get db user
                         Criteria criteria1 = session.createCriteria(User.class);
                         criteria1.add(Restrictions.eq("email", userEmail));
@@ -100,14 +103,13 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
                         }
                     } else {
                         // Handle session cart logic (unchanged)
-                        
                                //Session Cart
-
-                            HttpSession httpSession = request.getSession();
-
                             if (httpSession.getAttribute("sessionCart") != null) {
+                                                        System.out.println("|| sessionCart ||");
+
 //                            session cart found
                                 ArrayList<Cart_DTO> sessionCart = (ArrayList<Cart_DTO>) httpSession.getAttribute("sessionCart");
+                                
 
                                 Cart_DTO foundCart_DTO = null;
 
