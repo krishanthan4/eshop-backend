@@ -52,7 +52,6 @@ public class GetCart extends HttpServlet {
             ArrayList<Cart_DTO> cart_DTO_List = new ArrayList<>();
 
             // Fetch the user from the session (replace "" with actual user email from the session or request)
-//        String userEmail = ;
             Criteria userCriteria = session.createCriteria(User.class);
             userCriteria.add(Restrictions.eq("email", user_DTO.getEmail()));
             User user = (User) userCriteria.uniqueResult();
