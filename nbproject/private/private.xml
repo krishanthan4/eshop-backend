@@ -14,13 +14,15 @@
         <group>
             <file>file:/home/terminal/NetBeansProjects/eshop-java/eshop-backend/src/java/controller/GetCart.java</file>
             <file>file:/home/terminal/NetBeansProjects/eshop-java/eshop-backend/src/java/controller/AdvancedSearch.java</file>
+            <file>file:/home/terminal/NetBeansProjects/eshop-java/eshop-backend/src/java/controller/GetAdvancedSearchDetails.java</file>
+            <file>file:/home/terminal/NetBeansProjects/eshop-java/eshop-backend/src/java/controller/GetCategories.java</file>
+            <file>file:/home/terminal/NetBeansProjects/eshop-java/eshop-backend/src/java/controller/Search.java</file>
             <file>file:/home/terminal/NetBeansProjects/eshop-java/eshop-backend/src/java/controller/Checkout.java</file>
             <file>file:/home/terminal/NetBeansProjects/eshop-java/eshop-backend/src/java/controller/GetProduct.java</file>
             <file>file:/home/terminal/NetBeansProjects/eshop-java/eshop-backend/src/java/controller/Signout.java</file>
+            <file>file:/home/terminal/NetBeansProjects/eshop-java/eshop-backend/src/java/controller/RelatedProducts.java</file>
             <file>file:/home/terminal/NetBeansProjects/eshop-java/eshop-backend/src/java/controller/AddToCart.java</file>
-            <file>file:/home/terminal/NetBeansProjects/eshop-java/eshop-backend/src/java/controller/GetAdvancedSearchDetails.java</file>
             <file>file:/home/terminal/NetBeansProjects/eshop-java/eshop-backend/src/java/controller/Home.java</file>
-            <file>file:/home/terminal/NetBeansProjects/eshop-java/eshop-backend/src/java/controller/GetCategories.java</file>
             <file>file:/home/terminal/NetBeansProjects/eshop-java/eshop-backend/src/java/controller/AddProduct.java</file>
             <file>file:/home/terminal/NetBeansProjects/eshop-java/eshop-backend/src/java/controller/RemoveCart.java</file>
         </group>
