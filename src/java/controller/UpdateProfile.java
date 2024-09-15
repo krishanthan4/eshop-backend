@@ -58,8 +58,6 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             String gender = requestJsonObject.get("gender").getAsString();
             String line1 = requestJsonObject.get("line1").getAsString();
             String line2 = requestJsonObject.get("line2").getAsString();
-            String province = requestJsonObject.get("province").getAsString();
-            String district = requestJsonObject.get("district").getAsString();
             String city = requestJsonObject.get("city").getAsString();
             String postalCode = requestJsonObject.get("postalCode").getAsString();
 
@@ -76,10 +74,6 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
                 responseJsonObject.addProperty("content", "Add Your Address Line 1");
             } else if (line2.isEmpty()) {
                 responseJsonObject.addProperty("content", "Add Your Address Line 2");
-            } else if (province.isEmpty()) {
-                responseJsonObject.addProperty("content", "Select Your Province");
-            } else if (district.isEmpty()) {
-                responseJsonObject.addProperty("content", "Select Your District");
             } else if (city.isEmpty()) {
                 responseJsonObject.addProperty("content", "Select Your City");
             } else if (postalCode.isEmpty()) {
@@ -90,12 +84,8 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
                 responseJsonObject.addProperty("content", "Add a valid Last Name");
             } else if (!Validations.isMobileNumberValid(mobile)) {
                 responseJsonObject.addProperty("content", "Add a valid Mobile Number");
-            } else if (!Validations.isInteger(province)) {
-                responseJsonObject.addProperty("content", "Select a Valid Province");
             } else if (!Validations.isInteger(city)) {
                 responseJsonObject.addProperty("content", "Select a Valid City");
-            } else if (!Validations.isInteger(district)) {
-                responseJsonObject.addProperty("content", "Select a Valid District");
             } else if (!Validations.isPostalCodeValid(postalCode)) {
                 responseJsonObject.addProperty("content", "Add a valid Postal Code");
             } else {
@@ -119,7 +109,7 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
 
                 // Fetch and set gender
                 Criteria genderCriteria = session.createCriteria(Gender.class);
-                genderCriteria.add(Restrictions.eq("genderId", gender));
+                genderCriteria.add(Restrictions.eq("id", Integer.parseInt(gender)));
                 Gender genderObj = (Gender) genderCriteria.uniqueResult();
                 user.setGenderGender(genderObj);
 

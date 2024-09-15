@@ -7,6 +7,7 @@ import javax.persistence.*;
 @Table(name="cart")
 public class Cart implements Serializable{
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="cartId")
     private int id;
     

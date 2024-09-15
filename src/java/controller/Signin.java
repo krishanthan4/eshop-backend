@@ -1,6 +1,9 @@
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import dto.Cart_DTO;
 import dto.Response_DTO;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -17,57 +20,99 @@ import java.util.Date;
 import javax.servlet.annotation.WebServlet;
 import model.HibernateUtil;
 import entity.User;
+import java.util.ArrayList;
 import util.config;
+import entity.Cart;
+import entity.Product;
+import org.hibernate.Transaction;
 
 @WebServlet("/Signin")
 public class Signin extends HttpServlet {
 
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        Response_DTO response_DTO = new Response_DTO();
-        Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
-        JsonObject userJson = gson.fromJson(request.getReader(), JsonObject.class);
+   @Override
+protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    Response_DTO response_DTO = new Response_DTO();
+    Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
+    JsonObject userJson = gson.fromJson(request.getReader(), JsonObject.class);
 
-        if (userJson.get("email").getAsString().isEmpty()) {
-            response_DTO.setContent("Please enter your Email");
-        } else if (userJson.get("password").getAsString().isEmpty()) {
-            response_DTO.setContent("Please enter your Password");
-        } else {
-            Session session = HibernateUtil.getSessionFactory().openSession();
-            Criteria criteria1 = session.createCriteria(User.class);
-            criteria1.add(Restrictions.eq("email", userJson.get("email").getAsString()));
-            criteria1.add(Restrictions.eq("password", userJson.get("password").getAsString()));
+    // Input validation
+    String email = userJson.get("email").getAsString();
+    String password = userJson.get("password").getAsString();
 
-            if (!criteria1.list().isEmpty()) {
-                User user = (User) criteria1.list().get(0);
+    if (email.isEmpty()) {
+        response_DTO.setContent("Please enter your Email");
+    } else if (password.isEmpty()) {
+        response_DTO.setContent("Please enter your Password");
+    } else {
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        Transaction transaction = null;
 
-                if (!user.getVerificationCode().equals("verified")) {
-                    request.getSession().setAttribute("user", userJson.get("email").getAsString());
+        try {
+            transaction = session.beginTransaction();
+
+            Criteria criteria = session.createCriteria(User.class);
+            criteria.add(Restrictions.eq("email", email));
+            criteria.add(Restrictions.eq("password", password));
+
+            User user = (User) criteria.uniqueResult(); // Avoid multiple list calls, use uniqueResult()
+
+            if (user != null) {
+                if (!"verified".equals(user.getVerificationCode())) {
+                    request.getSession().setAttribute("user", email);
                     response_DTO.setContent("Unverified");
                 } else {
-                    // Generate JWT token
-                    String token = Jwts.builder()
-                        .setSubject(user.getEmail())
-                        .setIssuedAt(new Date())
-                        .setExpiration(new Date(System.currentTimeMillis() + 3600000)) // 1 hour expiration
-                        .signWith(SignatureAlgorithm.HS512, config.SECRET_KEY.getBytes())
-                        .compact();
-
-                    // Send JWT token in response
+                    // Successful login logic
                     response_DTO.setSuccess(true);
                     response_DTO.setContent("Sign in Success");
-                response.addHeader("Authorization", "Bearer " + token);
 
-                    // Optionally, store user information in session
-                    request.getSession().setAttribute("user", userJson.get("email").getAsString());
+                    if (request.getSession().getAttribute("sessionCart") != null) {
+                        ArrayList<Cart_DTO> cart_DTO_List = (ArrayList<Cart_DTO>) request.getSession().getAttribute("sessionCart");
+
+                        for (Cart_DTO cart_DTO : cart_DTO_List) {
+                            Criteria searchProduct = session.createCriteria(Product.class);
+                            searchProduct.add(Restrictions.eq("id", cart_DTO.getProduct().getId()));
+                            Product searchedCartProduct = (Product) searchProduct.uniqueResult();
+
+                            if (searchedCartProduct != null) {
+                                Criteria searchCart = session.createCriteria(Cart.class);
+                                searchCart.add(Restrictions.eq("user", user));
+                                searchCart.add(Restrictions.eq("product", searchedCartProduct));
+
+                                if (searchCart.uniqueResult() == null) { // Use uniqueResult to simplify
+                                    Cart cart = new Cart();
+                                    cart.setProduct(searchedCartProduct);
+                                    cart.setQty(cart_DTO.getQty());
+                                    cart.setUser(user);
+                                    session.save(cart);
+                                                                            System.out.println(":::: Set sessioncart to User ::::"+cart.getProduct().getTitle() + cart.getQty() + cart.getUser());
+
+                                }
+                            }
+                        }
+                    }
+                
+                    request.removeAttribute("sessionCart");
+                    // Store user information in session
+                    request.getSession().setAttribute("user", email);
                 }
             } else {
                 response_DTO.setContent("Invalid Details! Please try again");
             }
-        }
 
-        response.setContentType("application/json");
-        response.getWriter().write(gson.toJson(response_DTO));
-        System.out.println(gson.toJson(response_DTO));
+            transaction.commit();
+        } catch (Exception e) {
+            if (transaction != null) transaction.rollback();
+            e.printStackTrace();
+            response_DTO.setContent("Error processing request. Please try again later.");
+        } finally {
+            session.close(); // Ensure session is closed to prevent resource leaks
+        }
     }
+
+    // Write response
+    response.setContentType("application/json");
+    response.getWriter().write(gson.toJson(response_DTO));
+    System.out.println(gson.toJson(response_DTO));
+}
+
 }
