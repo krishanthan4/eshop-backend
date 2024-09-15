@@ -14,6 +14,15 @@ public class Validations {
         return password.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@#$%^&+=!]).{8,}$");
     }
     
+    public static boolean isTextValid(String text){
+    return text.matches("^[a-zA-Z]+$");
+    }
+    
+    public static boolean isPostalCodeValid(String postalCode) {
+    String regex = "^[0-9]{5}$";
+    return postalCode != null && postalCode.matches(regex);
+}
+
         public static boolean isDouble(String price) {
 
         return price.matches("^\\d+(\\.\\d{2})?$");

@@ -128,8 +128,6 @@ private JsonObject saveOrders(Session session, Transaction transaction, User use
                 Product product = cartItem.getProduct();
             }
 
-
-
             // Format full address
             String fullAddress = address.getLine1() + ", " + address.getLine2() + ", " + address.getCity().getCityName();
 

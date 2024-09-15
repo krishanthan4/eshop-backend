@@ -5,6 +5,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import dto.Response_DTO;
 import entity.Category;
+import entity.Model;
 import entity.Product;
 import entity.ProductImg;
 import java.io.IOException;
@@ -23,70 +24,131 @@ import org.hibernate.criterion.Restrictions;
 @WebServlet("/Home")
 public class Home extends HttpServlet {
 
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-     Gson gson = new Gson();
-        Session session = null;
-        
-        JsonObject jsonObject = new JsonObject();
-        jsonObject.addProperty("success", false);
-        try {
-            session = HibernateUtil.getSessionFactory().openSession();
-            Criteria criteria1 = session.createCriteria(Category.class);
-            List<Category> categoryList = criteria1.list();
+@Override
+protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    Gson gson = new Gson();
+    Session session = null;
 
-            if(!categoryList.isEmpty()){
-        jsonObject.addProperty("success", true);
-            jsonObject.add("categoryList", gson.toJsonTree(categoryList));
+    JsonObject jsonObject = new JsonObject();
+    jsonObject.addProperty("success", false);
+
+    try {
+        session = HibernateUtil.getSessionFactory().openSession();
+
+        // Create an array to hold categories
+        JsonArray categoryArray = new JsonArray();
+
+        Criteria categoryCriteria = session.createCriteria(Category.class);
+        List<Category> categoryList = categoryCriteria.list();
+
+        if (!categoryList.isEmpty()) {
+            for (Category category : categoryList) {
+                JsonObject categoryJson = new JsonObject();
+                categoryJson.addProperty("categoryId", category.getId());
+                categoryJson.addProperty("categoryName", category.getCatName());
+                categoryJson.addProperty("categoryIcon", category.getCatIcon());
+                categoryJson.addProperty("categoryImg", category.getCatImg());
+
+                // For each category, get its models
+                Criteria modelCriteria = session.createCriteria(Model.class);
+                modelCriteria.add(Restrictions.eq("categoryCatId", category));
+                List<Model> modelList = modelCriteria.list();
+
+                if (!modelList.isEmpty()) {
+                    JsonArray modelArray = new JsonArray(); // Array to hold models for this category
+
+                    for (Model model : modelList) {
+                        JsonObject modelJson = new JsonObject();
+                                              modelJson.addProperty("modelId", model.getId());
+                        modelJson.addProperty("modelName", model.getModelName());
+
+                        // For each model, get its products
+                        Criteria productCriteria = session.createCriteria(Product.class);
+                        productCriteria.add(Restrictions.eq("model", model));
+                        List<Product> productList = productCriteria.list();
+
+                        if (!productList.isEmpty()) {
+                            JsonArray productArray = new JsonArray(); // Array to hold products for this model
+
+                            for (Product product : productList) {
+                                JsonObject productJson = gson.toJsonTree(product).getAsJsonObject();
+                                productJson.remove("userEmail"); // Remove sensitive fields
+//                                productJson.remove("id"); // Remove sensitive fields
+                                productJson.remove("price"); // Remove sensitive fields
+                                productJson.remove("description"); // Remove sensitive fields
+                                productJson.remove("model"); // Remove sensitive fields
+                                productJson.remove("color"); // Remove sensitive fields
+                                productJson.remove("condition"); // Remove sensitive fields
+                                productJson.remove("qty"); // Remove sensitive fields
+                                productJson.remove("datetimeAdded"); // Remove sensitive fields
+                                productJson.remove("deliveryFee"); // Remove sensitive fields
+                                productJson.remove("status"); // Remove sensitive fields
+
+                                // Get product images for this product
+               
+                                productArray.add(productJson); // Add product to the product array
+                            }
+
+                            modelJson.add("products", productArray); // Add products to the model
+                        }
+
+                        modelArray.add(modelJson); // Add model to the model array
+                    }
+
+                    categoryJson.add("models", modelArray); // Add models to the category
+                }
+
+                categoryArray.add(categoryJson); // Add category to the category array
             }
-            
-Criteria criteria2 = session.createCriteria(Product.class);
-criteria2.addOrder(Order.asc("datetimeAdded"));
-List<Product> productList = criteria2.list();
 
-if (!productList.isEmpty()) {
-    jsonObject.addProperty("success", true);
-
-    JsonArray productArray = new JsonArray(); // Create an array to hold product objects with their images
-
-    for (Product product : productList) {
-        // Convert the product object to a JsonObject
-product.setUserEmail(null);
-
-        JsonObject productObject = gson.toJsonTree(product).getAsJsonObject();
-        // Query to get product images for this product
-        Criteria productImgCriteria = session.createCriteria(ProductImg.class);
-        productImgCriteria.add(Restrictions.eq("product", product)); // Assuming `ProductImg` has a field that references `Product`
-        List<ProductImg> productImgList = productImgCriteria.list();
-
-        // Add images to the product object if any exist
-        if (!productImgList.isEmpty()) {
-            for (ProductImg productImg : productImgList) {
-             productImg.setProduct(null);
-            }
-            productObject.add("productImgs", gson.toJsonTree(productImgList)); // Attach images directly to the product object
+            jsonObject.add("categoryList", categoryArray); // Add category array to the final JSON response
+            jsonObject.addProperty("success", true);
         }
 
-        // Add the complete product (with images) to the product array
-        productArray.add(productObject);
-    }
+        // Separate product list not tied to categories
+        Criteria productCriteria = session.createCriteria(Product.class);
+        productCriteria.addOrder(Order.asc("datetimeAdded"));
+        List<Product> allProductList = productCriteria.list();
 
-    // Add the product array to the response JSON
-    jsonObject.add("productList", productArray);
-}     
-        } catch (Exception e) {
-            System.out.println("Error : " + e);
-        } finally {
-            if (session != null) {
-                session.close(); // Ensure the session is always closed
+        if (!allProductList.isEmpty()) {
+            JsonArray productArray = new JsonArray();
+
+            for (Product product : allProductList) {
+                JsonObject productJson = gson.toJsonTree(product).getAsJsonObject();
+                productJson.remove("userEmail");
+
+                // Fetch and attach images for each product
+                Criteria productImgCriteria = session.createCriteria(ProductImg.class);
+                productImgCriteria.add(Restrictions.eq("product", product));
+                List<ProductImg> productImgList = productImgCriteria.list();
+
+                if (!productImgList.isEmpty()) {
+                    for (ProductImg productImg : productImgList) {
+                        productImg.setProduct(null);
+                    }
+                    
+                    productJson.add("productImgs", gson.toJsonTree(productImgList));
+                }
+
+                productArray.add(productJson);
             }
-            
-                 response.getWriter().write(gson.toJson(jsonObject));
-            System.out.println("Categories :" + gson.toJson(jsonObject));
+
+            jsonObject.add("productList", productArray); // Add the separate product list
         }
+
+    } catch (Exception e) {
+        System.out.println("Error : " + e);
+    } finally {
+        if (session != null) {
+            session.close();
+        }
+
         response.setCharacterEncoding("UTF-8");
         response.setContentType("application/json");
-
+        response.getWriter().write(gson.toJson(jsonObject));
+        System.out.println("Categories :" + gson.toJson(jsonObject));
     }
+}
+
 
 }

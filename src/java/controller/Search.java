@@ -29,14 +29,21 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
 
     try {
         // Parse the 'text' parameter from the request JSON
-        String text = responseJson.get("text").getAsString(); // Use getAsString() to avoid toString() issues
-
+        String text = responseJson.get("text").getAsString();
         session = HibernateUtil.getSessionFactory().openSession();
-        Criteria criteria2 = session.createCriteria(Product.class);
-        criteria2.add(Restrictions.or(
-            Restrictions.like("title", "%" + text + "%"),  // Added wildcard for LIKE operation
-            Restrictions.like("description", "%" + text + "%")  // Added wildcard for LIKE operation
-        ));
+  Criteria criteria2 = session.createCriteria(Product.class, "product");
+
+// Create aliases for the associations
+criteria2.createAlias("product.model", "modelAlias");
+criteria2.createAlias("modelAlias.categoryCatId", "categoryAlias");
+
+// Apply the restrictions
+criteria2.add(Restrictions.or(
+    Restrictions.like("product.title", "%" + text + "%"),
+    Restrictions.like("product.description", "%" + text + "%"),
+    Restrictions.like("modelAlias.modelName", "%" + text + "%"),
+    Restrictions.like("categoryAlias.catName", "%" + text + "%")
+));
 
         criteria2.addOrder(Order.asc("datetimeAdded")); // Sort by datetime
         List<Product> productList = criteria2.list();

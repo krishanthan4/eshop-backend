@@ -10,7 +10,7 @@ public class District implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "districtId", nullable = false)
-    private Integer addressId;
+    private Integer districtId;
 
     @Column(name = "districtName")
     private String districtName;
@@ -22,13 +22,14 @@ public class District implements Serializable {
     public District() {
     }
 
-    public Integer getAddressId() {
-        return addressId;
+    public Integer getDistrictId() {
+        return districtId;
     }
 
-    public void setAddressId(Integer addressId) {
-        this.addressId = addressId;
+    public void setDistrictId(Integer districtId) {
+        this.districtId = districtId;
     }
+
 
     public String getDistrictName() {
         return districtName;
