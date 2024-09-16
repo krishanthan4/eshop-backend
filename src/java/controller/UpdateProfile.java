@@ -147,6 +147,7 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
                 session.saveOrUpdate(address);
                 transaction.commit();  // Commit the address update transaction
                 responseJsonObject.addProperty("success", true);
+                session.flush();
             }
         } else {
             // User not signed in

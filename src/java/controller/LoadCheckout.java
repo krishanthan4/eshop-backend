@@ -47,6 +47,7 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
         Transaction transaction = session.beginTransaction();
 
     try {
+        session.flush();
         // Ensure that the user is logged in by checking the session
         if (httpSession.getAttribute("user") != null) {
             // Get user from the database
@@ -56,10 +57,11 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             User user = (User) criteria.uniqueResult();
 
         if (user != null) {
-                if (user.getFname() == null || user.getLname() == null || user.getMobile() == null) {
+                if (user.getFname().isEmpty() || user.getLname().isEmpty() || user.getMobile().isEmpty()) {
                     responseJsonObject.addProperty("content", "Add Your Name and Mobile to Profile");
                 } else {
                     // Get user address
+//                                        System.out.println("No Fname ::::" +user.getFname());
                     Criteria addressCriteria = session.createCriteria(Address.class);
                     addressCriteria.add(Restrictions.eq("user", user));
                     addressCriteria.setMaxResults(1);
@@ -142,7 +144,7 @@ String orderId2 =  Validations.generateOrderId();
             payhereObject.addProperty("merchant_id", merchantId);
             payhereObject.addProperty("return_url", "");
             payhereObject.addProperty("cancel_url", "");
-            payhereObject.addProperty("notify_url", "");
+            payhereObject.addProperty("notify_url", "https://1aa5-101-2-178-157.ngrok-free.app/VerifyPayments");
             payhereObject.addProperty("first_name", user.getFname());
             payhereObject.addProperty("last_name", user.getLname());
             payhereObject.addProperty("email", user.getEmail());
@@ -151,6 +153,7 @@ String orderId2 =  Validations.generateOrderId();
             payhereObject.addProperty("city", address.getCity().getCityName());
             payhereObject.addProperty("country", "Sri Lanka");
             payhereObject.addProperty("order_id", orderId2);
+                        payhereObject.addProperty("postal_code", address.getPostalCode());
             payhereObject.addProperty("items", items.toString());
             payhereObject.addProperty("currency", currency);
             payhereObject.addProperty("amount", formattedAmount);

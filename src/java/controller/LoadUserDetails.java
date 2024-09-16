@@ -45,10 +45,12 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             User user = (User) userCriteria.uniqueResult();
 
             if (user != null) {
+                if(user.getFname() !=null && user.getLname() != null && user.getGenderGender().getId()!= null && user.getMobile() != null){
                 jsonObject.addProperty("firstName", user.getFname());
                 jsonObject.addProperty("lastName", user.getLname());
                 jsonObject.addProperty("userGenderId", user.getGenderGender().getId());
-                jsonObject.addProperty("mobile", user.getMobile());
+                jsonObject.addProperty("mobile", user.getMobile());    
+                }
                 jsonObject.addProperty("password", user.getPassword());
                 jsonObject.addProperty("joinedDate", user.getJoinedDate().toString());
                 jsonObject.addProperty("email", user.getEmail());

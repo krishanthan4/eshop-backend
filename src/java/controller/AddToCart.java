@@ -30,86 +30,87 @@ import org.hibernate.Hibernate;
 import org.hibernate.Transaction;
 import org.hibernate.criterion.Restrictions;
 
-
 @WebServlet("/AddToCart")
 public class AddToCart extends HttpServlet {
 
- @Override
-protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-    Gson gson = new Gson();
-    org.hibernate.Session session = HibernateUtil.getSessionFactory().openSession();
-    Transaction transaction = session.beginTransaction();
-    Response_DTO response_DTO = new Response_DTO();
-                                HttpSession httpSession = request.getSession();
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        Gson gson = new Gson();
+        org.hibernate.Session session = HibernateUtil.getSessionFactory().openSession();
+        Transaction transaction = session.beginTransaction();
+        Response_DTO response_DTO = new Response_DTO();
+        HttpSession httpSession = request.getSession();
 
-    try {
-        JsonObject requestObject = gson.fromJson(request.getReader(), JsonObject.class);
-        String id = requestObject.get("productId").getAsString();
-        String qty = requestObject.get("qty").getAsString();
+        try {
+            JsonObject requestObject = gson.fromJson(request.getReader(), JsonObject.class);
+            String id = requestObject.get("productId").getAsString();
+            String qty = requestObject.get("qty").getAsString();
 
-        if (!Validations.isInteger(id)) {
-            response_DTO.setContent("Product not found");
-        } else if (!Validations.isInteger(qty)) {
-            response_DTO.setContent("Invalid Quantity");
-        } else {
-            int productId = Integer.parseInt(id);
-            int productQty = Integer.parseInt(qty);
-
-            if (productQty <= 0) {
-                response_DTO.setContent("Quantity must be greater than 0");
+            if (!Validations.isInteger(id)) {
+                response_DTO.setContent("Product not found");
+            } else if (!Validations.isInteger(qty)) {
+                response_DTO.setContent("Invalid Quantity");
             } else {
-                Product product = (Product) session.get(Product.class, productId);
-                if (product != null) {
-                     String userEmail = (String) request.getSession().getAttribute("user");
+                int productId = Integer.parseInt(id);
+                int productQty = Integer.parseInt(qty);
+
+                if (productQty <= 0) {
+                    response_DTO.setContent("Quantity must be greater than 0");
+                } else {
+                    Product product = (Product) session.get(Product.class, productId);
+                    if (product != null) {
+                        String userEmail = (String) request.getSession().getAttribute("user");
 //                        System.out.println("|| userCart ||"+userEmail);
-                    if (httpSession.getAttribute("user") != null) {
-                       
-                        // Get db user
-                        Criteria criteria1 = session.createCriteria(User.class);
-                        criteria1.add(Restrictions.eq("email", userEmail));
-                        User user = (User) criteria1.uniqueResult();
+                        if (httpSession.getAttribute("user") != null) {
 
-                        // Check in db cart
-                        Criteria criteria2 = session.createCriteria(Cart.class);
-                        criteria2.add(Restrictions.eq("user", user));
-                        criteria2.add(Restrictions.eq("product", product));
+                            // Get db user
+                            Criteria criteria1 = session.createCriteria(User.class);
+                            criteria1.add(Restrictions.eq("email", userEmail));
+                            User user = (User) criteria1.uniqueResult();
 
-                        if (criteria2.list().isEmpty()) {
-                            // Item not in cart
-                            if (productQty <= product.getQty()) {
-                                Cart cart = new Cart();
-                                cart.setProduct(product);
-                                cart.setQty(productQty);
-                                cart.setUser(user);
-                                session.save(cart);
-                                transaction.commit();
-                                response_DTO.setSuccess(true);
-                                response_DTO.setContent("Product Added to the Cart");
+                            // Check in db cart
+                            Criteria criteria2 = session.createCriteria(Cart.class);
+                            criteria2.add(Restrictions.eq("user", user));
+                            criteria2.add(Restrictions.eq("product", product));
+
+                            if (criteria2.list().isEmpty()) {
+                                // Item not in cart
+                                if (productQty <= product.getQty()) {
+                                    Cart cart = new Cart();
+                                    cart.setProduct(product);
+                                    cart.setQty(productQty);
+                                    cart.setUser(user);
+                                    session.save(cart);
+                                    transaction.commit();
+                                    response_DTO.setSuccess(true);
+                                    response_DTO.setContent("Product Added to the Cart");
+                                    session.flush();
+
+                                } else {
+                                    response_DTO.setContent("Invalid Quantity");
+                                }
                             } else {
-                                response_DTO.setContent("Invalid Quantity");
+                                // Item already in cart
+                                Cart cartItem = (Cart) criteria2.uniqueResult();
+                                if ((cartItem.getQty() + productQty) <= product.getQty()) {
+                                    cartItem.setQty(cartItem.getQty() + productQty);
+                                    session.update(cartItem);
+                                    transaction.commit();
+                                    response_DTO.setSuccess(true);
+                                    response_DTO.setContent("Cart item updated");
+                                    session.flush();
+                                } else {
+                                    response_DTO.setContent("Quantity not available");
+                                }
                             }
                         } else {
-                            // Item already in cart
-                            Cart cartItem = (Cart) criteria2.uniqueResult();
-                            if ((cartItem.getQty() + productQty) <= product.getQty()) {
-                                cartItem.setQty(cartItem.getQty() + productQty);
-                                session.update(cartItem);
-                                transaction.commit();
-                                response_DTO.setSuccess(true);
-                                response_DTO.setContent("Cart item updated");
-                            } else {
-                                response_DTO.setContent("Quantity not available");
-                            }
-                        }
-                    } else {
-                        // Handle session cart logic (unchanged)
-                               //Session Cart
+                            // Handle session cart logic (unchanged)
+                            //Session Cart
                             if (httpSession.getAttribute("sessionCart") != null) {
-                                                        System.out.println("|| sessionCart ||");
+                                System.out.println("|| sessionCart ||");
 
 //                            session cart found
                                 ArrayList<Cart_DTO> sessionCart = (ArrayList<Cart_DTO>) httpSession.getAttribute("sessionCart");
-                                
 
                                 Cart_DTO foundCart_DTO = null;
 
@@ -128,9 +129,9 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
                                         foundCart_DTO.setQty(foundCart_DTO.getQty() + productQty);
                                         response_DTO.setSuccess(true);
                                         response_DTO.setContent("Product Added to the Cart");
-                                        
-                                         response_DTO.setSuccess(true);
-                                    response_DTO.setContent("cart item updated");
+
+                                        response_DTO.setSuccess(true);
+                                        response_DTO.setContent("cart item updated");
                                     } else {
                                         //quantity not available
                                         response_DTO.setContent("quantity not available");
@@ -144,7 +145,7 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
                                         cart_DTO.setProduct(product);
                                         cart_DTO.setQty(productQty);
                                         sessionCart.add(cart_DTO);
-                                        
+
                                         response_DTO.setSuccess(true);
                                         response_DTO.setContent("Product Added to the Cart");
 
@@ -168,7 +169,7 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
                                     sessionCart.add(cart_DTO);
 
                                     httpSession.setAttribute("sessionCart", sessionCart);
-                                    
+
                                     response_DTO.setSuccess(true);
                                     response_DTO.setContent("Product Added to the Cart");
 
@@ -177,23 +178,23 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
                                     response_DTO.setContent("quantity not available");
                                 }
                             }
+                        }
+                    } else {
+                        response_DTO.setContent("Product not found");
                     }
-                } else {
-                    response_DTO.setContent("Product not found");
                 }
             }
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            e.printStackTrace();
+            response_DTO.setContent("Unable to process request");
+        } finally {
+            session.close();
         }
-    } catch (Exception e) {
-        if (transaction != null) {
-            transaction.rollback();
-        }
-        e.printStackTrace();
-        response_DTO.setContent("Unable to process request");
-    } finally {
-        session.close();
+        response.setContentType("application/json");
+        response.getWriter().write(gson.toJson(response_DTO));
     }
-    response.setContentType("application/json");
-    response.getWriter().write(gson.toJson(response_DTO));
-}
 
 }

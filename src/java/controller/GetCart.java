@@ -47,13 +47,11 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
     ArrayList<Cart_DTO> cart_DTO_List = new ArrayList<>();
 
     try {
-        // Clear first-level cache to avoid returning stale or deleted objects
-        session.clear();
-        session.flush(); // Ensure that pending operations are flushed to the database
-
-        // Fetch the user from the session (replace "" with actual user email from the session or request)
+        // Ensure fresh data from database, disable cache
+        session.flush();
         Criteria userCriteria = session.createCriteria(User.class);
         userCriteria.add(Restrictions.eq("email", user_DTO.getEmail()));
+        userCriteria.setCacheable(false); // Disable Hibernate caching for this query
         User user = (User) userCriteria.uniqueResult();
 
         if (user != null) {
@@ -63,7 +61,7 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             Criteria cartCriteria = session.createCriteria(Cart.class, "cart")
                 .createAlias("cart.product", "product")
                 .add(Restrictions.eq("cart.user", user))
-                .setCacheable(false);  // Disable Hibernate caching for this query
+                .setCacheable(false); // Disable cache for cart query
             cartCriteria.addOrder(Order.desc("cart.id")); // Order by cart ID to ensure consistency
 
             List<Cart> cartList = cartCriteria.list();
@@ -72,18 +70,15 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
 
             if (!cartList.isEmpty()) {
                 for (Cart cart : cartList) {
-
                     JsonObject cartObject = new JsonObject();
-                    cart.setUser(null);  // Avoid circular reference in JSON
+                    cart.setUser(null); // Avoid circular reference in JSON
 
                     Product product = cart.getProduct();
 
                     if (product != null) {
-                        product.setUserEmail(null);  // Avoid exposing sensitive info
-
-                        // Convert the product to a JSON object
+                        product.setUserEmail(null); // Avoid exposing sensitive info
                         JsonObject productObject = gson.toJsonTree(product).getAsJsonObject();
-
+                        
                         // Fetch associated product images
                         Criteria productImgCriteria = session.createCriteria(ProductImg.class);
                         productImgCriteria.add(Restrictions.eq("product", product));
@@ -102,8 +97,6 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
                         cartObject.add("product", productObject);
                         cartObject.addProperty("quantity", cart.getQty()); // Add quantity to the cart object
                         cartObject.addProperty("cartId", cart.getId());    // Add cart ID if needed
-
-                        // Add the cart object to the array
                         cartArray.add(cartObject);
                     }
                 }
@@ -124,7 +117,7 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             System.out.println("UserCart: " + gson.toJson(jsonObject));
 
         } else {
-            // Session Cart (This section remains unchanged)
+            // Session Cart (Unchanged Section for Session-Based Cart)
             if (httpSession.getAttribute("sessionCart") != null) {
                 cart_DTO_List = (ArrayList<Cart_DTO>) httpSession.getAttribute("sessionCart");
                 System.out.println("||SessionCart here||" + gson.toJsonTree(cart_DTO_List));
@@ -164,6 +157,7 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
                     statusObject.addProperty("status", product.getStatus().getStatus());
                     productObject.add("status", statusObject);
 
+                    // Fetch and attach product images (same logic as above)
                     Criteria productImgCriteria = session.createCriteria(ProductImg.class);
                     productImgCriteria.add(Restrictions.eq("product", product));
                     productImgCriteria.setCacheable(false);  // Disable cache for product images query
@@ -191,7 +185,6 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
                 jsonObject2.addProperty("content", "noItems");
                 response.setContentType("application/json");
                 response.getWriter().write(gson.toJson(jsonObject2));
-                System.out.println(gson.toJson(jsonObject2));
                 response.getWriter().flush();
             }
         }
@@ -205,7 +198,5 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
         }
     }
 }
-
-
 
 }

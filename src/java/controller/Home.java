@@ -107,7 +107,7 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
 
         // Separate product list not tied to categories
         Criteria productCriteria = session.createCriteria(Product.class);
-        productCriteria.addOrder(Order.asc("datetimeAdded"));
+        productCriteria.addOrder(Order.asc("id"));
         List<Product> allProductList = productCriteria.list();
 
         if (!allProductList.isEmpty()) {
@@ -134,6 +134,7 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             }
 
             jsonObject.add("productList", productArray); // Add the separate product list
+            
         }
 
     } catch (Exception e) {

@@ -113,10 +113,11 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
 
                         // Remove cart item
                         session.delete(cartItem);
+                                            transaction.commit();
+
                     }
 
                     // Commit transaction after processing
-                    transaction.commit();
 
                     // Add success response
                     responseJsonObject.addProperty("success", true);
