@@ -88,7 +88,7 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
                 // Set success to true if user details are successfully retrieved
             }
         } else {
-            jsonObject.addProperty("error", "User is not authenticated.");
+            jsonObject.addProperty("content", "User is not authenticated.");
         }
 
     } catch (Exception e) {

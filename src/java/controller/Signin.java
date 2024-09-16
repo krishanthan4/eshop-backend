@@ -24,12 +24,13 @@ import java.util.ArrayList;
 import util.config;
 import entity.Cart;
 import entity.Product;
+import org.hibernate.FetchMode;
 import org.hibernate.Transaction;
 
 @WebServlet("/Signin")
 public class Signin extends HttpServlet {
 
-   @Override
+  @Override
 protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
     Response_DTO response_DTO = new Response_DTO();
     Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
@@ -50,13 +51,18 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
         try {
             transaction = session.beginTransaction();
 
+            // Prevent lazy loading using Criteria and FetchMode
             Criteria criteria = session.createCriteria(User.class);
             criteria.add(Restrictions.eq("email", email));
             criteria.add(Restrictions.eq("password", password));
+            criteria.setFetchMode("carts", FetchMode.JOIN);  // Fetch associated carts eagerly
 
-            User user = (User) criteria.uniqueResult(); // Avoid multiple list calls, use uniqueResult()
+            User user = (User) criteria.uniqueResult();
 
             if (user != null) {
+                // Initialize collections to avoid LazyInitializationException
+//                Hibernate.initialize(user.getCarts());  // Initialize carts collection
+
                 if (!"verified".equals(user.getVerificationCode())) {
                     request.getSession().setAttribute("user", email);
                     response_DTO.setContent("Unverified");
@@ -65,12 +71,14 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
                     response_DTO.setSuccess(true);
                     response_DTO.setContent("Sign in Success");
 
+                    // Check if session cart exists
                     if (request.getSession().getAttribute("sessionCart") != null) {
                         ArrayList<Cart_DTO> cart_DTO_List = (ArrayList<Cart_DTO>) request.getSession().getAttribute("sessionCart");
 
                         for (Cart_DTO cart_DTO : cart_DTO_List) {
                             Criteria searchProduct = session.createCriteria(Product.class);
                             searchProduct.add(Restrictions.eq("id", cart_DTO.getProduct().getId()));
+                            searchProduct.setFetchMode("categories", FetchMode.JOIN);  // Prevent lazy loading of associated categories
                             Product searchedCartProduct = (Product) searchProduct.uniqueResult();
 
                             if (searchedCartProduct != null) {
@@ -78,30 +86,30 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
                                 searchCart.add(Restrictions.eq("user", user));
                                 searchCart.add(Restrictions.eq("product", searchedCartProduct));
 
-                                if (searchCart.uniqueResult() == null) { // Use uniqueResult to simplify
+                                if (searchCart.uniqueResult() == null) {
                                     Cart cart = new Cart();
                                     cart.setProduct(searchedCartProduct);
                                     cart.setQty(cart_DTO.getQty());
                                     cart.setUser(user);
                                     session.save(cart);
-                                                                            System.out.println(":::: Set sessioncart to User ::::"+cart.getProduct().getTitle() + cart.getQty() + cart.getUser());
-
+                                    System.out.println(":::: Added sessionCart to User ::::" + cart.getProduct().getTitle() + " Qty: " + cart.getQty() + " User: " + cart.getUser());
                                 }
                             }
                         }
                     }
-                
-                    request.removeAttribute("sessionCart");
+                    // Clear session cart after processing
+                    request.getSession().removeAttribute("sessionCart");
+
                     // Store user information in session
                     request.getSession().setAttribute("user", email);
                 }
             } else {
-                response_DTO.setContent("Invalid Details! Please try again");
+                response_DTO.setContent("Invalid Details! Please try again.");
             }
 
-            transaction.commit();
+            transaction.commit(); // Commit transaction after successful operation
         } catch (Exception e) {
-            if (transaction != null) transaction.rollback();
+            if (transaction != null) transaction.rollback(); // Rollback in case of error
             e.printStackTrace();
             response_DTO.setContent("Error processing request. Please try again later.");
         } finally {
@@ -114,5 +122,6 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
     response.getWriter().write(gson.toJson(response_DTO));
     System.out.println(gson.toJson(response_DTO));
 }
+
 
 }

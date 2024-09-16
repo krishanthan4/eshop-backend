@@ -75,7 +75,7 @@ public class Signup extends HttpServlet {
 
                     // Send verification email in a separate thread
                     Thread sendMailThread = new Thread(() -> 
-                        Mail.sendMail(userdto.getEmail(), "BeFit Verification", "<h1 style=\"color:#6482AD;\">Your Verifiacation Code :" + user.getVerificationCode()+ "</h1>")
+                        Mail.sendMail(userdto.getEmail(), "BeFit Verification",user.getVerificationCode())
                     );
 
                     sendMailThread.start();

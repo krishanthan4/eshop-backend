@@ -43,40 +43,41 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
     responseJsonObject.addProperty("success", false);
 
     HttpSession httpSession = request.getSession();
-    Session session = HibernateUtil.getSessionFactory().openSession();
-        Transaction transaction = session.beginTransaction();
+    Session session = null;
+    Transaction transaction = null;
 
     try {
-        session.flush();
-        // Ensure that the user is logged in by checking the session
+        session = HibernateUtil.getSessionFactory().openSession();
+        transaction = session.beginTransaction();
+
         if (httpSession.getAttribute("user") != null) {
-            // Get user from the database
-            String userEmail = httpSession.getAttribute("user").toString();
+            // Get user from the session
+            String userEmail = (String) httpSession.getAttribute("user");
             Criteria criteria = session.createCriteria(User.class);
             criteria.add(Restrictions.eq("email", userEmail));
             User user = (User) criteria.uniqueResult();
 
-        if (user != null) {
-                if (user.getFname().isEmpty() || user.getLname().isEmpty() || user.getMobile().isEmpty()) {
+            if (user != null) {
+                // Validate user information
+                if (user.getFname() == null || user.getFname().isEmpty() ||
+                    user.getLname() == null || user.getLname().isEmpty() ||
+                    user.getMobile() == null || user.getMobile().isEmpty()) {
                     responseJsonObject.addProperty("content", "Add Your Name and Mobile to Profile");
                 } else {
-                    // Get user address
-//                                        System.out.println("No Fname ::::" +user.getFname());
+                    // Get user's address
                     Criteria addressCriteria = session.createCriteria(Address.class);
                     addressCriteria.add(Restrictions.eq("user", user));
                     addressCriteria.setMaxResults(1);
-                    List<Address> addressList = addressCriteria.list();
+                    Address address = (Address) addressCriteria.uniqueResult();
 
-                    if (!addressList.isEmpty()) {
-                        Address address = addressList.get(0);
-                        
+                    if (address != null) {
                         // Save orders
-                        JsonObject responseObject = saveOrders(session, transaction, user, address, responseJsonObject);
-                        
-                        if (responseObject != null) {
-                            responseJsonObject = responseObject; // Update the responseJsonObject
+                        JsonObject saveOrderResponse = saveOrders(session, user, address, responseJsonObject);
+
+                        if (saveOrderResponse != null) {
+                            responseJsonObject = saveOrderResponse; // Update the responseJsonObject
                         } else {
-                            System.out.println("saveOrders returned null");
+                            responseJsonObject.addProperty("content", "Error during saving order.");
                         }
                     } else {
                         responseJsonObject.addProperty("content", "Add Your Delivery Address to Profile");
@@ -87,47 +88,47 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             }
         } else {
             responseJsonObject.addProperty("content", "User session expired. Please log in again.");
-            System.out.println("User session is invalid.");
         }
-         response.setContentType("application/json");
+
+        transaction.commit();
+
+    } catch (Exception e) {
+        if (transaction != null) transaction.rollback(); // Rollback in case of error
+        responseJsonObject.addProperty("content", "Error occurred while fetching the cart.");
+        System.out.println("Error in load checkout: " + e);
+    } finally {
+        if (session != null && session.isOpen()) {
+            session.close(); // Ensure the session is closed properly
+        }
+
+        // Write response as JSON
+        response.setContentType("application/json");
         response.getWriter().write(gson.toJson(responseJsonObject));
         System.out.println(gson.toJson(responseJsonObject));
-    } catch (Exception e) {
-        System.out.println("Error in doGet method: " + e);
-        responseJsonObject.addProperty("content", "Error occurred while fetching the cart.");
-    } finally {
-       
-        // Ensure the session is closed properly
-        if (session != null && session.isOpen()) {
-            session.close();
-        }
     }
 }
 
 
-private JsonObject saveOrders(Session session, Transaction transaction, User user, Address address, JsonObject responseJsonObject) {
+private JsonObject saveOrders(Session session, User user, Address address, JsonObject responseJsonObject) {
     try {
         Gson gson = new Gson();
-        
+
         // Get Cart Order
         Criteria criteria = session.createCriteria(Cart.class);
         criteria.add(Restrictions.eq("user", user));
         List<Cart> cartList = criteria.list();
         
         Double totalAmount = 0.00;
-        if (!cartList.isEmpty()) {
-            // Calculate the total amount
-            for (Cart cart : cartList) {
-                totalAmount += cart.getProduct().getPrice() * cart.getQty() + cart.getProduct().getDeliveryFee();
-            }
 
+        if (!cartList.isEmpty()) {
             StringBuilder items = new StringBuilder();
 
-            // Create order items and update product quantities
-            for (Cart cartItem : cartList) {
-                items.append(cartItem.getProduct().getTitle()).append(", ");
+            // Calculate the total amount and prepare order items
+            for (Cart cart : cartList) {
+                totalAmount += cart.getProduct().getPrice() * cart.getQty() + cart.getProduct().getDeliveryFee();
+                items.append(cart.getProduct().getTitle()).append(", ");
 
-                Product product = cartItem.getProduct();
+                // Update product quantity or other necessary data here if needed
             }
 
             // Format full address
@@ -140,11 +141,15 @@ private JsonObject saveOrders(Session session, Transaction transaction, User use
             String merchantSecret = config.MERCHANT_SECRET;
             String merchantSecretMD5Hash = Payhere.generateMD5(merchantSecret);
             JsonObject payhereObject = new JsonObject();
-String orderId2 =  Validations.generateOrderId();
+            
+            // Generate order ID
+            String orderId2 = Validations.generateOrderId();
+            
+            // Prepare payment information
             payhereObject.addProperty("merchant_id", merchantId);
             payhereObject.addProperty("return_url", "");
             payhereObject.addProperty("cancel_url", "");
-            payhereObject.addProperty("notify_url", "https://1aa5-101-2-178-157.ngrok-free.app/VerifyPayments");
+            payhereObject.addProperty("notify_url", "https://92e6-101-2-178-157.ngrok-free.app/VerifyPayments");
             payhereObject.addProperty("first_name", user.getFname());
             payhereObject.addProperty("last_name", user.getLname());
             payhereObject.addProperty("email", user.getEmail());
@@ -153,35 +158,30 @@ String orderId2 =  Validations.generateOrderId();
             payhereObject.addProperty("city", address.getCity().getCityName());
             payhereObject.addProperty("country", "Sri Lanka");
             payhereObject.addProperty("order_id", orderId2);
-                        payhereObject.addProperty("postal_code", address.getPostalCode());
+            payhereObject.addProperty("postal_code", address.getPostalCode());
             payhereObject.addProperty("items", items.toString());
             payhereObject.addProperty("currency", currency);
             payhereObject.addProperty("amount", formattedAmount);
             payhereObject.addProperty("sandbox", true);
 
-            String md5Hash = Payhere.generateMD5(merchantId +orderId2 + formattedAmount + currency + merchantSecretMD5Hash);
+            // Generate and add hash
+            String md5Hash = Payhere.generateMD5(merchantId + orderId2 + formattedAmount + currency + merchantSecretMD5Hash);
             payhereObject.addProperty("hash", md5Hash);
 
             // Add payment object to the response
             responseJsonObject.addProperty("success", true);
             responseJsonObject.addProperty("content", "Checkout Completed");
             responseJsonObject.add("payhereList", gson.toJsonTree(payhereObject));
-            
-            return responseJsonObject;
 
         } else {
             responseJsonObject.addProperty("content", "NoCart");
             System.out.println("No cart available for user: " + user.getEmail());
         }
     } catch (HibernateException e) {
-        // Rollback the transaction in case of an exception
-        if (transaction != null) {
-            transaction.rollback();
-        }
         System.out.println("Error in saveOrders method: " + e);
         responseJsonObject.addProperty("content", "Error occurred during checkout.");
     }
-    
+
     return responseJsonObject;
 }
 

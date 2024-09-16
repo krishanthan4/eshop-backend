@@ -35,12 +35,13 @@ import util.config;
 
 @WebServlet("/Checkout")
 public class Checkout extends HttpServlet {
-@Override
+
+   @Override
 protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
     Gson gson = new Gson();
     HttpSession httpsession = request.getSession();
     Session session = HibernateUtil.getSessionFactory().openSession();
-    Transaction transaction = session.beginTransaction();
+    Transaction transaction = null;
     JsonObject responseJsonObject = new JsonObject();
     responseJsonObject.addProperty("success", false);
 
@@ -70,9 +71,11 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             cartCriteria.add(Restrictions.eq("user", user));
             List<Cart> cartList = cartCriteria.list();
 
-            Double totalAmount = 0.00;
             if (!cartList.isEmpty()) {
+                transaction = session.beginTransaction(); // Begin transaction here
+
                 // Calculate the total amount
+                Double totalAmount = 0.00;
                 for (Cart cart : cartList) {
                     totalAmount += cart.getProduct().getPrice() * cart.getQty() + cart.getProduct().getDeliveryFee();
                 }
@@ -85,44 +88,30 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
                 invoice.setTotal(totalAmount);
                 session.save(invoice);
 
-                // Verify the invoice was saved
-                Criteria invoiceCriteria = session.createCriteria(Invoice.class);
-                invoiceCriteria.add(Restrictions.eq("user", user));
-                invoiceCriteria.add(Restrictions.eq("invoiceId", invoice.getInvoiceId()));
-                Invoice savedInvoice = (Invoice) invoiceCriteria.uniqueResult();
+                // Create order items and update product quantities
+                for (Cart cartItem : cartList) {
+                    Product product = cartItem.getProduct();
 
-                if (savedInvoice == null) {
-                    System.out.println("Invoice could not be retrieved.");
-                    responseJsonObject.addProperty("content", "Error processing the order.");
-                } else {
+                    InvoiceHasProducts invoiceHasProducts = new InvoiceHasProducts();
+                    invoiceHasProducts.setInvoice(invoice);
+                    invoiceHasProducts.setProduct(product);
+                    invoiceHasProducts.setBoughtQty(cartItem.getQty());
+                    invoiceHasProducts.setOrderStatus(1); // Assuming 1 means 'paid'
+                    session.save(invoiceHasProducts);
 
-                    // Create order items and update product quantities
-                    for (Cart cartItem : cartList) {
+                    // Update product stock
+                    product.setQty(product.getQty() - cartItem.getQty());
+                    session.update(product);
 
-                        Product product = cartItem.getProduct();
-                        InvoiceHasProducts invoiceHasProducts = new InvoiceHasProducts();
-                        invoiceHasProducts.setInvoice(invoice);
-                        invoiceHasProducts.setProduct(product);
-                        invoiceHasProducts.setBoughtQty(cartItem.getQty());
-                        invoiceHasProducts.setOrderStatus(1); // Assuming 1 means 'paid'
-                        session.save(invoiceHasProducts);
-
-                        // Update product stock
-                        product.setQty(product.getQty() - cartItem.getQty());
-                        session.update(product);
-
-                        // Remove cart item
-                        session.delete(cartItem);
-                                            transaction.commit();
-
-                    }
-
-                    // Commit transaction after processing
-
-                    // Add success response
-                    responseJsonObject.addProperty("success", true);
-                    responseJsonObject.addProperty("content", "Checkout Completed");
+                    // Remove cart item
+                    session.delete(cartItem);
                 }
+
+                transaction.commit(); // Commit only after processing all items
+
+                // Add success response
+                responseJsonObject.addProperty("success", true);
+                responseJsonObject.addProperty("content", "Checkout Completed");
             } else {
                 responseJsonObject.addProperty("content", "NoCart");
                 System.out.println("No cart available for user: " + user.getEmail());
@@ -138,7 +127,7 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
 
     } catch (HibernateException e) {
         // Rollback the transaction in case of an exception
-        if (transaction != null) {
+        if (transaction != null && transaction.isActive()) {
             transaction.rollback();
         }
         System.out.println("Error in saveOrders method: " + e);

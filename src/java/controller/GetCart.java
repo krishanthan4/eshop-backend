@@ -30,6 +30,7 @@ import javax.servlet.http.HttpSession;
 import model.HibernateUtil;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
+import org.hibernate.Transaction;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Restrictions;
 
@@ -48,76 +49,72 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
 
     try {
         // Ensure fresh data from database, disable cache
-        session.flush();
         Criteria userCriteria = session.createCriteria(User.class);
         userCriteria.add(Restrictions.eq("email", user_DTO.getEmail()));
         userCriteria.setCacheable(false); // Disable Hibernate caching for this query
         User user = (User) userCriteria.uniqueResult();
 
         if (user != null) {
-            System.out.println("||User Cart here||" + user.getEmail());
+               // Fetch the cart items for the logged-in user
+               Transaction transaction = session.beginTransaction();
+                System.out.println("||User here||" + user.getEmail());
+                Criteria cartCriteria = session.createCriteria(Cart.class);
+                cartCriteria.add(Restrictions.eq("user", user));
+transaction.commit();
 
-            // Fetch the cart items for the logged-in user and join with product and product image details
-            Criteria cartCriteria = session.createCriteria(Cart.class, "cart")
-                .createAlias("cart.product", "product")
-                .add(Restrictions.eq("cart.user", user))
-                .setCacheable(false); // Disable cache for cart query
-            cartCriteria.addOrder(Order.desc("cart.id")); // Order by cart ID to ensure consistency
+                // Check if the cart has any items
+                if (!cartCriteria.list().isEmpty()) {
+                    List<Cart> cartList = cartCriteria.list();
 
-            List<Cart> cartList = cartCriteria.list();
+                    JsonArray cartArray = new JsonArray(); // Array to hold all cart items with product details
 
-            JsonArray cartArray = new JsonArray(); // Array to hold all cart items with product details
+                    for (Cart cart : cartList) {
+                        JsonObject cartObject = new JsonObject();
+                        cart.setUser(null);
+                        // Fetch the product for each cart item
+                        Criteria productCriteria = session.createCriteria(Product.class);
+                        productCriteria.add(Restrictions.eq("id", cart.getProduct().getId()));
+                        Product product = (Product) productCriteria.uniqueResult();
 
-            if (!cartList.isEmpty()) {
-                for (Cart cart : cartList) {
-                    JsonObject cartObject = new JsonObject();
-                    cart.setUser(null); // Avoid circular reference in JSON
+                        if (product != null) {
+                            product.setUserEmail(null);
+                            // Convert the product to a JSON object
+                            JsonObject productObject = gson.toJsonTree(product).getAsJsonObject();
 
-                    Product product = cart.getProduct();
-
-                    if (product != null) {
-                        product.setUserEmail(null); // Avoid exposing sensitive info
-                        JsonObject productObject = gson.toJsonTree(product).getAsJsonObject();
-                        
-                        // Fetch associated product images
-                        Criteria productImgCriteria = session.createCriteria(ProductImg.class);
-                        productImgCriteria.add(Restrictions.eq("product", product));
-                        productImgCriteria.setCacheable(false); // Disable cache for product images query
-                        List<ProductImg> productImgList = productImgCriteria.list();
-
-                        // Add product images if they exist
-                        if (!productImgList.isEmpty()) {
-                            for (ProductImg productImg : productImgList) {
-                                productImg.setProduct(null); // Avoid circular reference in JSON
+                            // Fetch associated product images
+                            Criteria productImgCriteria = session.createCriteria(ProductImg.class);
+                            productImgCriteria.add(Restrictions.eq("product", product));
+                            List<ProductImg> productImgList = productImgCriteria.list();
+                            // Add product images if they exist
+                            if (!productImgList.isEmpty()) {
+                                for (ProductImg productImg : productImgList) {
+                                    productImg.setProduct(null); // Avoid circular reference in JSON
+                                }
+                                productObject.add("productImgs", gson.toJsonTree(productImgList)); // Attach images to the product object
                             }
-                            productObject.add("productImgs", gson.toJsonTree(productImgList)); // Attach images to the product object
+
+                            // Add product details to the cart object
+                            cartObject.add("product", productObject);
+                            cartObject.addProperty("quantity", cart.getQty()); // Add quantity to the cart object
+                            cartObject.addProperty("cartId", cart.getId()); // Add cart ID if needed
+
+                            // Add the cart object to the array
+                            cartArray.add(cartObject);
                         }
-
-                        // Add product details to the cart object
-                        cartObject.add("product", productObject);
-                        cartObject.addProperty("quantity", cart.getQty()); // Add quantity to the cart object
-                        cartObject.addProperty("cartId", cart.getId());    // Add cart ID if needed
-                        cartArray.add(cartObject);
                     }
+
+                    // If we found cart items, set success to true and add the cart array to the response
+                    jsonObject.addProperty("success", true);
+                    jsonObject.add("cartList", cartArray);
+                } else {
+                    jsonObject.addProperty("success", true);
+                    jsonObject.addProperty("content", "noItems");
+
                 }
-
-                // If we found cart items, set success to true and add the cart array to the response
-                jsonObject.addProperty("success", true);
-                jsonObject.add("cartList", cartArray);
-            } else {
-                // No items found in the cart
-                jsonObject.addProperty("success", true);
-                jsonObject.addProperty("content", "noItems");
-            }
-
-            // Write the response
-            response.setContentType("application/json");
-            response.getWriter().write(gson.toJson(jsonObject));
-            response.getWriter().flush();
-            System.out.println("UserCart: " + gson.toJson(jsonObject));
-
+                // Write the response
+                response.setContentType("application/json");
+                response.getWriter().write(gson.toJson(jsonObject));
         } else {
-            // Session Cart (Unchanged Section for Session-Based Cart)
             if (httpSession.getAttribute("sessionCart") != null) {
                 cart_DTO_List = (ArrayList<Cart_DTO>) httpSession.getAttribute("sessionCart");
                 System.out.println("||SessionCart here||" + gson.toJsonTree(cart_DTO_List));
@@ -178,14 +175,12 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response) 
                 jsonObject2.add("cartList", cartArray);
                 response.setContentType("application/json");
                 response.getWriter().write(gson.toJson(jsonObject2));
-                response.getWriter().flush();
             } else {
                 JsonObject jsonObject2 = new JsonObject();
                 jsonObject2.addProperty("success", true);
                 jsonObject2.addProperty("content", "noItems");
                 response.setContentType("application/json");
                 response.getWriter().write(gson.toJson(jsonObject2));
-                response.getWriter().flush();
             }
         }
 
